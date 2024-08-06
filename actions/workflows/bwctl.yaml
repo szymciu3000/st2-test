@@ -1,0 +1,69 @@
+---
+version: '1.0'
+input:
+  - bandwidth
+  - timeout
+  - source
+  - destination
+  - test
+  - length
+tasks:
+  choose_test:
+    action: core.noop
+    next:
+      - when: <% succeeded() and (ctx().test = 'iperf') %>
+        publish:
+          - sourcevm: <% ctx().source %>-tpvm
+        do:
+          - iperf_test
+      - when: <% succeeded() and (ctx().test = 'owamp') %>
+        publish:
+          - sourcevm: <% ctx().source %>-tpvm
+        do:
+          - owamp_test
+      - when: <% succeeded() and (ctx().test = 'tracepath') %>
+        publish:
+          - sourcevm: <% ctx().source %>-tpvm
+        do:
+          - tracepath_test
+  iperf_test:
+    action: core.remote
+    input:
+      hosts: <% ctx().source %>-tpvm
+      cmd: bwctl -T iperf3 -c <% ctx().destination %>-perf -b <% ctx().bandwidth %> -i 10 -t <% ctx().timeout %> -q
+      username: root
+      timeout: <% ctx().timeout + 30 %>
+    next:
+      - when: '{{ failed() }}'
+        do:
+          - failure_message
+  owamp_test:
+    action: core.remote
+    input:
+      hosts: <% ctx().source %>-tpvm
+      cmd: bwping -T owamp -c <% ctx().destination %>-perf
+      username: root
+      timeout: <% ctx().timeout + 30 %>
+    next:
+      - when: '{{ failed() }}'
+        do:
+          - failure_message
+  tracepath_test:
+    action: core.remote
+    input:
+      hosts: <% ctx().source %>-tpvm
+      cmd: bwtraceroute -T tracepath -c <% ctx().destination %>-perf -l <% ctx().length %>
+      username: root
+      timeout: <% ctx().timeout + 30 %>
+    next:
+      - when: '{{ failed() }}'
+        do:
+          - failure_message
+  failure_message:
+    action: chatops.post_message
+    input:
+      channel: <% env().get('__actions').get('st2.action').st2_context.parent.source_channel %>
+      message: Ruh-roh...something went wrong
+      extra:
+        slack:
+          color: danger

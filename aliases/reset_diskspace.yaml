@@ -1,0 +1,9 @@
+---
+name: "reset_diskspace"
+action_ref: "st2_demos.reset_diskspace_demo"
+description: "Reset diskspace demo"
+formats:
+  - "demo reset diskspace on {{hostname}}"
+result:
+  format: |
+    Large log file created. Monitoring & auto-remediation should kick in any moment now...

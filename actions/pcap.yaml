@@ -1,0 +1,23 @@
+---
+description: Capture traffic from a switch
+enabled: true
+runner_type: orquesta
+entry_point: workflows/pcap.yaml
+name: pcap
+pack: st2_demos
+parameters:
+  filter:
+    required: true
+    type: string
+  timeout:
+    type: integer
+    default: 300
+  switch:
+    type: string
+    required: true
+  count:
+    type: integer
+    default: 100
+  uuid:
+    type: string
+    required: true

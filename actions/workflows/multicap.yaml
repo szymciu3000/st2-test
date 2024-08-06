@@ -1,0 +1,53 @@
+---
+version: '1.0'
+input:
+  - filter
+  - timeout
+  - switches
+  - count
+tasks:
+  notify_slack:
+    action: chatops.post_message
+    input:
+      channel: <% env().get('__actions').get('st2.action').st2_context.parent.source_channel %>
+      message: Setting up environment and starting captures now...{~}
+    next:
+      - when: '{{ succeeded() }}'
+        do:
+          - grab_uuid
+      - when: '{{ failed() }}'
+        do:
+          - failure_message_main
+  grab_uuid:
+    action: core.uuid
+    next:
+      - when: '{{ succeeded() }}'
+        publish:
+          - uuid: <% result().result %>
+        do:
+          - parent_pcaps
+      - when: '{{ failed() }}'
+        do:
+          - failure_message_main
+  parent_pcaps:
+    with:
+      items: switch in <% ctx().switches %>
+    action: st2_demos.pcap
+    input:
+      switch: <% item(switch) %>
+      count: <% ctx().count %>
+      timeout: <% ctx().timeout %>
+      filter: <% ctx().filter %>
+      uuid: <% ctx().uuid %>
+    next:
+      - when: '{{ failed() }}'
+        do:
+          - failure_message_main
+  failure_message_main:
+    action: chatops.post_message
+    input:
+      channel: <% env().get('__actions').get('st2.action').st2_context.parent.source_channel %>
+      message: Ruh-roh...something went wrong
+      extra:
+        slack:
+          color: danger
