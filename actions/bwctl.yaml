@@ -1,5 +1,5 @@
 ---
-description: Run performance tests between SLX devices
+description: idk
 enabled: true
 runner_type: orquesta
 entry_point: workflows/bwctl.yaml
